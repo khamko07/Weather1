@@ -492,10 +492,23 @@
       .daily-forecast-desc {
         font-size: 12px;
         color: rgba(255, 255, 255, 0.8);
-        margin-top: 8px;
+        margin-top: 5px;
         position: relative;
         z-index: 1;
         font-family: "Noto Sans Lao", "Phetsarath", sans-serif;
+      }
+
+      .daily-rainfall-chance {
+        font-size: 11px;
+        color: #87ceeb;
+        font-weight: 600;
+        margin-top: 5px;
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
       }
 
       .forecast-item {
@@ -558,18 +571,35 @@
       .forecast-desc {
         font-size: 14px;
         color: rgba(255, 255, 255, 0.8);
-        margin-bottom: 15px;
+        margin-bottom: 10px;
         text-transform: capitalize;
         font-weight: 500;
         position: relative;
         z-index: 1;
       }
 
+      .rainfall-chance {
+        font-size: 13px;
+        color: #87ceeb;
+        font-weight: 600;
+        margin-bottom: 10px;
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+      }
+
+      .rainfall-icon {
+        font-size: 14px;
+      }
+
       .forecast-details {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-        font-size: 12px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        font-size: 11px;
         position: relative;
         z-index: 1;
       }
@@ -724,7 +754,7 @@
         }
 
         .current-details {
-          grid-template-columns: 1fr;
+          grid-template-columns: repeat(2, 1fr);
         }
 
         .search-container,
@@ -893,6 +923,10 @@
           <div class="detail-item">
             <div class="detail-label">🔽 ຄວາມກົດດັນ</div>
             <div class="detail-value" id="currentPressure"></div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">🌧️ ໂອກາດຝົນຕົກ</div>
+            <div class="detail-value" id="currentRainfall"></div>
           </div>
         </div>
       </div>
@@ -1069,6 +1103,51 @@
         }
       }
 
+      // Calculate rainfall chance based on weather conditions and humidity
+      function calculateRainfallChance(weatherData) {
+        const weather = weatherData.weather[0];
+        const humidity = weatherData.main.humidity;
+        const clouds = weatherData.clouds.all;
+
+        // Base chance on weather condition
+        let baseChance = 0;
+        const weatherId = weather.id;
+
+        if (weatherId >= 200 && weatherId < 300) {
+          // Thunderstorm
+          baseChance = 85;
+        } else if (weatherId >= 300 && weatherId < 400) {
+          // Drizzle
+          baseChance = 70;
+        } else if (weatherId >= 500 && weatherId < 600) {
+          // Rain
+          baseChance = 80;
+        } else if (weatherId >= 600 && weatherId < 700) {
+          // Snow
+          baseChance = 75;
+        } else if (weatherId >= 700 && weatherId < 800) {
+          // Atmosphere (mist, fog, etc.)
+          baseChance = 20;
+        } else if (weatherId === 800) {
+          // Clear sky
+          baseChance = 5;
+        } else if (weatherId > 800) {
+          // Clouds
+          baseChance = 15 + clouds * 0.3;
+        }
+
+        // Adjust based on humidity
+        const humidityFactor = (humidity - 50) * 0.5;
+        baseChance += humidityFactor;
+
+        // Adjust based on cloud coverage
+        const cloudFactor = clouds * 0.2;
+        baseChance += cloudFactor;
+
+        // Ensure it's within 0-100 range
+        return Math.max(0, Math.min(100, Math.round(baseChance)));
+      }
+
       // Generate hourly data from 3-hour intervals
       function generateHourlyData(threeHourData) {
         const hourlyData = [];
@@ -1186,6 +1265,9 @@
         const currentWind = document.getElementById("currentWind");
         const currentFeels = document.getElementById("currentFeels");
         const currentPressure = document.getElementById("currentPressure");
+        const currentRainfall = document.getElementById("currentRainfall");
+
+        const rainfallChance = calculateRainfallChance(data);
 
         cityName.textContent = `${data.name}, ${data.sys.country}`;
         currentIcon.textContent = weatherIcons[data.weather[0].icon] || "🌤️";
@@ -1195,6 +1277,7 @@
         currentWind.textContent = `${data.wind.speed} m/s`;
         currentFeels.textContent = `${Math.round(data.main.feels_like)}°C`;
         currentPressure.textContent = `${data.main.pressure} hPa`;
+        currentRainfall.textContent = `${rainfallChance}%`;
 
         currentWeather.classList.remove("hidden");
       }
@@ -1236,6 +1319,8 @@
             dayLabel = dateString;
           }
 
+          const rainfallChance = calculateRainfallChance(item);
+
           forecastItem.innerHTML = `
                     <div class="forecast-time">${timeString}</div>
                     <div style="font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 10px;">${dayLabel}</div>
@@ -1248,6 +1333,10 @@
                     <div class="forecast-desc">${
                       item.weather[0].description
                     }</div>
+                    <div class="rainfall-chance">
+                        <span class="rainfall-icon">🌧️</span>
+                        <span>${rainfallChance}% ໂອກາດຝົນຕົກ</span>
+                    </div>
                     <div class="forecast-details">
                         <div class="forecast-detail">
                             <span class="forecast-detail-label">ຄວາມຊຸ່ມ</span>
@@ -1260,12 +1349,6 @@
                             <span class="forecast-detail-value">${
                               item.wind.speed
                             } m/s</span>
-                        </div>
-                        <div class="forecast-detail">
-                            <span class="forecast-detail-label">ເມກ</span>
-                            <span class="forecast-detail-value">${
-                              item.clouds.all
-                            }%</span>
                         </div>
                     </div>
                 `;
@@ -1330,6 +1413,10 @@
               )}°</span>
             </div>
             <div class="daily-forecast-desc">${dayData.description}</div>
+            <div class="daily-rainfall-chance">
+              <span>🌧️</span>
+              <span>${dayData.rainfallChance}%</span>
+            </div>
           `;
 
           dailyForecastGrid.appendChild(dailyItem);
@@ -1361,6 +1448,7 @@
 
             // Get the most common weather condition for the day
             const weatherCounts = {};
+            let totalRainfallChance = 0;
             dayItems.forEach((item) => {
               const weather = item.weather[0];
               const key = weather.icon;
@@ -1371,11 +1459,19 @@
                 };
               }
               weatherCounts[key].count++;
+
+              // Calculate rainfall chance for this item
+              totalRainfallChance += calculateRainfallChance(item);
             });
 
             const mostCommonWeather = Object.keys(weatherCounts).reduce(
               (a, b) =>
                 weatherCounts[a].count > weatherCounts[b].count ? a : b
+            );
+
+            // Average rainfall chance for the day
+            const avgRainfallChance = Math.round(
+              totalRainfallChance / dayItems.length
             );
 
             dailyData.push({
@@ -1384,6 +1480,7 @@
               minTemp: minTemp,
               icon: mostCommonWeather,
               description: weatherCounts[mostCommonWeather].description,
+              rainfallChance: avgRainfallChance,
             });
 
             processedDays.add(dateString);
