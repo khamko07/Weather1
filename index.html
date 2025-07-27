@@ -372,6 +372,132 @@
         overflow-y: auto;
       }
 
+      /* Daily forecast styles */
+      .daily-forecast-container {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--border-radius);
+        padding: 40px;
+        margin-top: 40px;
+        box-shadow: var(--shadow-medium);
+        animation: slideInUp 0.6s ease-out 0.4s both;
+      }
+
+      .daily-forecast-title {
+        font-size: 2rem;
+        font-weight: 600;
+        margin-bottom: 30px;
+        color: white;
+        text-align: center;
+        position: relative;
+      }
+
+      .daily-forecast-title::after {
+        content: "";
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 3px;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        border-radius: 2px;
+      }
+
+      .daily-forecast-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 15px;
+      }
+
+      .daily-forecast-item {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        padding: 20px;
+        text-align: center;
+        transition: var(--transition);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .daily-forecast-item::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+          135deg,
+          rgba(240, 147, 251, 0.1) 0%,
+          rgba(245, 87, 108, 0.05) 100%
+        );
+        opacity: 0;
+        transition: var(--transition);
+      }
+
+      .daily-forecast-item:hover {
+        transform: translateY(-5px) scale(1.02);
+        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      .daily-forecast-item:hover::before {
+        opacity: 1;
+      }
+
+      .daily-forecast-day {
+        font-size: 14px;
+        font-weight: 600;
+        color: white;
+        margin-bottom: 10px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .daily-forecast-icon {
+        font-size: 2.5rem;
+        margin: 10px 0;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        position: relative;
+        z-index: 1;
+      }
+
+      .daily-forecast-temps {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 10px 0;
+        position: relative;
+        z-index: 1;
+      }
+
+      .daily-forecast-high {
+        font-size: 18px;
+        font-weight: 700;
+        color: white;
+      }
+
+      .daily-forecast-low {
+        font-size: 16px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.7);
+      }
+
+      .daily-forecast-desc {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.8);
+        margin-top: 8px;
+        position: relative;
+        z-index: 1;
+        font-family: "Noto Sans Lao", "Phetsarath", sans-serif;
+      }
+
       .forecast-item {
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
@@ -577,8 +703,13 @@
           max-height: 500px;
         }
 
-        .forecast-container {
+        .forecast-container,
+        .daily-forecast-container {
           padding: 30px 20px;
+        }
+
+        .daily-forecast-grid {
+          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         }
       }
 
@@ -598,7 +729,8 @@
 
         .search-container,
         .current-weather,
-        .forecast-container {
+        .forecast-container,
+        .daily-forecast-container {
           padding: 25px 15px;
         }
 
@@ -609,6 +741,15 @@
         }
 
         .forecast-item {
+          padding: 15px;
+        }
+
+        .daily-forecast-grid {
+          grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+          gap: 10px;
+        }
+
+        .daily-forecast-item {
           padding: 15px;
         }
       }
@@ -760,6 +901,11 @@
         <h3 class="forecast-title">📅 ພະຍາກອນຕາມຊົ່ວໂມງ (24 ຊົ່ວໂມງຂ້າງໜ້າ)</h3>
         <div class="forecast-grid" id="forecastGrid"></div>
       </div>
+
+      <div id="dailyForecastContainer" class="daily-forecast-container hidden">
+        <h3 class="daily-forecast-title">📆 ພະຍາກອນຕາມມື້ (7 ມື້ຂ້າງໜ້າ)</h3>
+        <div class="daily-forecast-grid" id="dailyForecastGrid"></div>
+      </div>
     </div>
 
     <script>
@@ -776,6 +922,9 @@
       const error = document.getElementById("error");
       const currentWeather = document.getElementById("currentWeather");
       const forecastContainer = document.getElementById("forecastContainer");
+      const dailyForecastContainer = document.getElementById(
+        "dailyForecastContainer"
+      );
 
       // Weather icon mapping
       const weatherIcons = {
@@ -913,6 +1062,7 @@
           hideLoading();
           displayCurrentWeather(currentData);
           displayForecast(forecastData);
+          displayDailyForecast(forecastData);
         } catch (err) {
           hideLoading();
           showError(err.message);
@@ -1126,12 +1276,130 @@
         forecastContainer.classList.remove("hidden");
       }
 
+      // Display daily forecast
+      function displayDailyForecast(data) {
+        const dailyForecastGrid = document.getElementById("dailyForecastGrid");
+        dailyForecastGrid.innerHTML = "";
+
+        // Group forecast data by day
+        const dailyData = groupForecastByDay(data.list);
+
+        // Lao day names
+        const laoDayNames = {
+          0: "ວັນອາທິດ", // Sunday
+          1: "ວັນຈັນ", // Monday
+          2: "ວັນອັງຄານ", // Tuesday
+          3: "ວັນພຸດ", // Wednesday
+          4: "ວັນພະຫັດ", // Thursday
+          5: "ວັນສຸກ", // Friday
+          6: "ວັນເສົາ", // Saturday
+        };
+
+        dailyData.forEach((dayData, index) => {
+          const dailyItem = document.createElement("div");
+          dailyItem.className = "daily-forecast-item";
+
+          const date = new Date(dayData.date);
+          const today = new Date();
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+
+          let dayLabel = "";
+          if (index === 0 && date.toDateString() === today.toDateString()) {
+            dayLabel = "ມື້ນີ້";
+          } else if (
+            index === 1 &&
+            date.toDateString() === tomorrow.toDateString()
+          ) {
+            dayLabel = "ມື້ອື່ນ";
+          } else {
+            dayLabel = laoDayNames[date.getDay()];
+          }
+
+          dailyItem.innerHTML = `
+            <div class="daily-forecast-day">${dayLabel}</div>
+            <div class="daily-forecast-icon">${
+              weatherIcons[dayData.icon] || "🌤️"
+            }</div>
+            <div class="daily-forecast-temps">
+              <span class="daily-forecast-high">${Math.round(
+                dayData.maxTemp
+              )}°</span>
+              <span class="daily-forecast-low">${Math.round(
+                dayData.minTemp
+              )}°</span>
+            </div>
+            <div class="daily-forecast-desc">${dayData.description}</div>
+          `;
+
+          dailyForecastGrid.appendChild(dailyItem);
+        });
+
+        dailyForecastContainer.classList.remove("hidden");
+      }
+
+      // Group forecast data by day
+      function groupForecastByDay(forecastList) {
+        const dailyData = [];
+        const processedDays = new Set();
+
+        forecastList.forEach((item) => {
+          const date = new Date(item.dt * 1000);
+          const dateString = date.toDateString();
+
+          if (!processedDays.has(dateString) && dailyData.length < 7) {
+            // Find all items for this day
+            const dayItems = forecastList.filter((forecast) => {
+              const forecastDate = new Date(forecast.dt * 1000);
+              return forecastDate.toDateString() === dateString;
+            });
+
+            // Calculate min/max temperatures for the day
+            const temps = dayItems.map((item) => item.main.temp);
+            const maxTemp = Math.max(...temps);
+            const minTemp = Math.min(...temps);
+
+            // Get the most common weather condition for the day
+            const weatherCounts = {};
+            dayItems.forEach((item) => {
+              const weather = item.weather[0];
+              const key = weather.icon;
+              if (!weatherCounts[key]) {
+                weatherCounts[key] = {
+                  count: 0,
+                  description: weather.description,
+                };
+              }
+              weatherCounts[key].count++;
+            });
+
+            const mostCommonWeather = Object.keys(weatherCounts).reduce(
+              (a, b) =>
+                weatherCounts[a].count > weatherCounts[b].count ? a : b
+            );
+
+            dailyData.push({
+              date: dateString,
+              maxTemp: maxTemp,
+              minTemp: minTemp,
+              icon: mostCommonWeather,
+              description: weatherCounts[mostCommonWeather].description,
+            });
+
+            processedDays.add(dateString);
+          }
+        });
+
+        return dailyData;
+      }
+
       // Utility functions
       function showLoading() {
         loading.classList.remove("hidden");
         error.classList.add("hidden");
         currentWeather.classList.add("hidden");
         forecastContainer.classList.add("hidden");
+        dailyForecastContainer.classList.add("hidden");
       }
 
       function hideLoading() {
@@ -1143,6 +1411,7 @@
         error.classList.remove("hidden");
         currentWeather.classList.add("hidden");
         forecastContainer.classList.add("hidden");
+        dailyForecastContainer.classList.add("hidden");
       }
 
       // Initialize with a default city (optional)
