@@ -366,8 +366,10 @@
 
       .forecast-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 20px;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+        max-height: 600px;
+        overflow-y: auto;
       }
 
       .forecast-item {
@@ -571,7 +573,8 @@
         }
 
         .forecast-grid {
-          grid-template-columns: 1fr;
+          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+          max-height: 500px;
         }
 
         .forecast-container {
@@ -597,6 +600,16 @@
         .current-weather,
         .forecast-container {
           padding: 25px 15px;
+        }
+
+        .forecast-grid {
+          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+          gap: 10px;
+          max-height: 400px;
+        }
+
+        .forecast-item {
+          padding: 15px;
         }
       }
 
@@ -744,7 +757,7 @@
       </div>
 
       <div id="forecastContainer" class="forecast-container hidden">
-        <h3 class="forecast-title">📅 ພະຍາກອນ 24 ຊົ່ວໂມງຂ້າງໜ້າ</h3>
+        <h3 class="forecast-title">📅 ພະຍາກອນຕາມຊົ່ວໂມງ (24 ຊົ່ວໂມງຂ້າງໜ້າ)</h3>
         <div class="forecast-grid" id="forecastGrid"></div>
       </div>
     </div>
@@ -906,6 +919,113 @@
         }
       }
 
+      // Generate hourly data from 3-hour intervals
+      function generateHourlyData(threeHourData) {
+        const hourlyData = [];
+        const currentTime = new Date();
+
+        // Start from next hour
+        const startTime = new Date(currentTime);
+        startTime.setHours(startTime.getHours() + 1);
+        startTime.setMinutes(0);
+        startTime.setSeconds(0);
+        startTime.setMilliseconds(0);
+
+        // Generate 24 hours of data
+        for (let i = 0; i < 24; i++) {
+          const targetTime = new Date(startTime.getTime() + i * 60 * 60 * 1000);
+
+          // Find the closest 3-hour data points
+          let closestIndex = 0;
+          let minDiff = Math.abs(
+            threeHourData[0].dt * 1000 - targetTime.getTime()
+          );
+
+          for (let j = 1; j < threeHourData.length; j++) {
+            const diff = Math.abs(
+              threeHourData[j].dt * 1000 - targetTime.getTime()
+            );
+            if (diff < minDiff) {
+              minDiff = diff;
+              closestIndex = j;
+            }
+          }
+
+          // Use the closest data point or interpolate if we have adjacent points
+          let interpolatedData;
+          if (closestIndex > 0 && closestIndex < threeHourData.length - 1) {
+            // Simple interpolation between adjacent points
+            const prev = threeHourData[closestIndex - 1];
+            const current = threeHourData[closestIndex];
+            const next = threeHourData[closestIndex + 1];
+
+            // Calculate interpolation factor
+            const prevTime = prev.dt * 1000;
+            const currentTime = current.dt * 1000;
+            const nextTime = next.dt * 1000;
+            const targetTimeMs = targetTime.getTime();
+
+            let factor = 0;
+            let baseData = current;
+            let targetData = current;
+
+            if (targetTimeMs < currentTime) {
+              factor = (currentTime - targetTimeMs) / (currentTime - prevTime);
+              baseData = current;
+              targetData = prev;
+            } else if (targetTimeMs > currentTime) {
+              factor = (targetTimeMs - currentTime) / (nextTime - currentTime);
+              baseData = current;
+              targetData = next;
+            }
+
+            // Interpolate temperature and other values
+            interpolatedData = {
+              dt: Math.floor(targetTime.getTime() / 1000),
+              main: {
+                temp:
+                  baseData.main.temp +
+                  (targetData.main.temp - baseData.main.temp) * factor,
+                feels_like:
+                  baseData.main.feels_like +
+                  (targetData.main.feels_like - baseData.main.feels_like) *
+                    factor,
+                humidity: Math.round(
+                  baseData.main.humidity +
+                    (targetData.main.humidity - baseData.main.humidity) * factor
+                ),
+                pressure: Math.round(
+                  baseData.main.pressure +
+                    (targetData.main.pressure - baseData.main.pressure) * factor
+                ),
+              },
+              weather: baseData.weather, // Keep weather description from base data
+              wind: {
+                speed:
+                  baseData.wind.speed +
+                  (targetData.wind.speed - baseData.wind.speed) * factor,
+              },
+              clouds: {
+                all: Math.round(
+                  baseData.clouds.all +
+                    (targetData.clouds.all - baseData.clouds.all) * factor
+                ),
+              },
+            };
+          } else {
+            // Use the closest data point directly
+            interpolatedData = {
+              ...threeHourData[closestIndex],
+              dt: Math.floor(targetTime.getTime() / 1000),
+            };
+          }
+
+          hourlyData.push(interpolatedData);
+        }
+
+        return hourlyData;
+      }
+
       // Display current weather
       function displayCurrentWeather(data) {
         const cityName = document.getElementById("cityName");
@@ -934,8 +1054,8 @@
         const forecastGrid = document.getElementById("forecastGrid");
         forecastGrid.innerHTML = "";
 
-        // Get next 24 hours (8 items * 3 hours = 24 hours)
-        const hourlyData = data.list.slice(0, 8);
+        // Generate hourly data from 3-hour intervals
+        const hourlyData = generateHourlyData(data.list.slice(0, 8));
 
         hourlyData.forEach((item) => {
           const forecastItem = document.createElement("div");
@@ -944,7 +1064,6 @@
           const date = new Date(item.dt * 1000);
           const timeString = date.toLocaleTimeString("en-US", {
             hour: "numeric",
-            minute: "2-digit",
             hour12: true,
           });
           const dateString = date.toLocaleDateString("en-US", {
@@ -953,9 +1072,23 @@
             day: "numeric",
           });
 
+          // Check if it's today or tomorrow
+          const today = new Date();
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+
+          let dayLabel = "";
+          if (date.toDateString() === today.toDateString()) {
+            dayLabel = "ມື້ນີ້";
+          } else if (date.toDateString() === tomorrow.toDateString()) {
+            dayLabel = "ມື້ອື່ນ";
+          } else {
+            dayLabel = dateString;
+          }
+
           forecastItem.innerHTML = `
                     <div class="forecast-time">${timeString}</div>
-                    <div style="font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 10px;">${dateString}</div>
+                    <div style="font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 10px;">${dayLabel}</div>
                     <div class="weather-icon" style="font-size: 2rem;">${
                       weatherIcons[item.weather[0].icon] || "🌤️"
                     }</div>
