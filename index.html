@@ -1,12 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="lo">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Weather Forecast</title>
+    <title>ພະຍາກອນອາກາດ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@100..900&family=Phetsarath:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
-      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
-
       * {
         margin: 0;
         padding: 0;
@@ -28,13 +32,15 @@
       }
 
       body {
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
+        font-family: "Phetsarath", "Noto Sans Lao", sans-serif;
         background: var(--primary-gradient);
         min-height: 100vh;
         color: var(--text-primary);
         position: relative;
         overflow-x: hidden;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
 
       body::before {
@@ -86,6 +92,8 @@
         -webkit-text-fill-color: transparent;
         background-clip: text;
         animation: fadeInUp 0.8s ease-out;
+        font-family: "Phetsarath", "Noto Sans Lao", sans-serif;
+        letter-spacing: 1px;
       }
 
       .header p {
@@ -93,6 +101,8 @@
         font-weight: 400;
         opacity: 0.9;
         animation: fadeInUp 0.8s ease-out 0.2s both;
+        font-family: "Noto Sans Lao", "Phetsarath", sans-serif;
+        letter-spacing: 0.5px;
       }
 
       @keyframes fadeInUp {
@@ -139,7 +149,7 @@
         backdrop-filter: blur(10px);
         color: white;
         transition: var(--transition);
-        font-family: inherit;
+        font-family: "Phetsarath", "Noto Sans Lao", sans-serif;
       }
 
       .search-input::placeholder {
@@ -161,7 +171,7 @@
         font-weight: 600;
         cursor: pointer;
         transition: var(--transition);
-        font-family: inherit;
+        font-family: "Phetsarath", "Noto Sans Lao", sans-serif;
         position: relative;
         overflow: hidden;
       }
@@ -530,10 +540,12 @@
 
         .header h1 {
           font-size: 2.5rem;
+          letter-spacing: 0.5px;
         }
 
         .header p {
           font-size: 1rem;
+          letter-spacing: 0.3px;
         }
 
         .search-form {
@@ -570,6 +582,7 @@
       @media (max-width: 480px) {
         .header h1 {
           font-size: 2rem;
+          letter-spacing: 0.3px;
         }
 
         .current-temp {
@@ -610,13 +623,74 @@
       ::-webkit-scrollbar-thumb:hover {
         background: rgba(255, 255, 255, 0.5);
       }
+
+      /* Lao font specific styling */
+      .lao-text {
+        font-family: "Phetsarath", "Noto Sans Lao", sans-serif;
+        font-feature-settings: "liga" 1, "kern" 1;
+        text-rendering: optimizeLegibility;
+      }
+
+      /* Better text rendering for Lao script */
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      p,
+      span,
+      div,
+      button,
+      input {
+        font-feature-settings: "liga" 1, "kern" 1;
+        text-rendering: optimizeLegibility;
+      }
+
+      /* Ensure proper line height for Lao text */
+      .detail-label,
+      .forecast-detail-label {
+        line-height: 1.4;
+      }
+
+      .forecast-desc,
+      #currentDesc {
+        line-height: 1.5;
+        font-family: "Noto Sans Lao", "Phetsarath", sans-serif;
+      }
+
+      /* Loading spinner styles */
+      .loading-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+      }
+
+      .spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top: 2px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <header class="header">
-        <h1>🌤️ Weather Forecast</h1>
-        <p>Dự báo thời tiết chi tiết theo giờ cho mọi thành phố</p>
+        <h1>🌤️ ພະຍາກອນອາກາດ</h1>
+        <p>ພະຍາກອນອາກາດລາຍລະອຽດຕາມຊົ່ວໂມງສໍາລັບທຸກເມືອງ</p>
       </header>
 
       <div class="search-container">
@@ -625,51 +699,22 @@
             type="text"
             class="search-input"
             id="cityInput"
-            placeholder="Nhập tên thành phố (ví dụ: Hà Nội, Hồ Chí Minh)"
+            placeholder="ປ້ອນຊື່ເມືອງ (ຕົວຢ່າງ: ວຽງຈັນ, ຫຼວງພະບາງ)"
             required
           />
-          <button type="submit" class="btn btn-primary">
-            🔍 Xem Thời Tiết
+          <button type="submit" class="btn btn-primary">🔍 ເບິ່ງອາກາດ</button>
+          <button type="button" class="btn btn-secondary" id="locationBtn">
+            📍 ສະຖານທີ່ປັດຈຸບັນ
           </button>
-          <bun type="button" class="btn btn-secondary" id="locationBtn"
-            >📍 Vị Trí Hiện Tại</bun
-          >tto
         </form>
       </div>
 
       <div id="loading" class="loading hidden">
-        <div
-          style="
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-          "
-        >
-          <div
-            style="
-              width: 20px;
-              height: 20px;
-              border: 2px solid rgba(255, 255, 255, 0.3);
-              border-top: 2px solid white;
-              border-radius: 50%;
-              animation: spin 1s linear infinite;
-            "
-          ></div>
-          <p>Đang tải dữ liệu thời tiết...</p>
+        <div class="loading-content">
+          <div class="spinner"></div>
+          <p>ກໍາລັງໂຫຼດຂໍ້ມູນອາກາດ...</p>
         </div>
       </div>
-
-      <style>
-        @keyframes spin {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
-        }
-      </style>
 
       <div id="error" class="error hidden"></div>
 
@@ -680,27 +725,26 @@
         <div id="currentDesc"></div>
         <div class="current-details">
           <div class="detail-item">
-            <div class="detail-label">💧 Độ Ẩm</div>
+            <div class="detail-label">💧 ຄວາມຊຸ່ມ</div>
             <div class="detail-value" id="currentHumidity"></div>
           </div>
           <div class="detail-item">
-            <div class="detail-label">💨 Tốc Độ Gió</div>
+            <div class="detail-label">💨 ຄວາມໄວລົມ</div>
             <div class="detail-value" id="currentWind"></div>
           </div>
           <div class="detail-item">
-            <div class="detail-label">🌡️ Cảm Giác</div>
+            <div class="detail-label">🌡️ ຮູ້ສຶກ</div>
             <div class="detail-value" id="currentFeels"></div>
           </div>
           <div class="detail-item">
-            <div class="detail-label">🔽 Áp Suất</div>
+            <div class="detail-label">🔽 ຄວາມກົດດັນ</div>
             <div class="detail-value" id="currentPressure"></div>
           </div>
         </div>
       </div>
 
       <div id="forecastContainer" class="forecast-container hidden">
-        <div class="forecast-title">📅 Dự Báo 24 Giờ Tới</div>
-        h3>
+        <h3 class="forecast-title">📅 ພະຍາກອນ 24 ຊົ່ວໂມງຂ້າງໜ້າ</h3>
         <div class="forecast-grid" id="forecastGrid"></div>
       </div>
     </div>
@@ -758,7 +802,7 @@
       // Get user's current location
       function getCurrentLocation() {
         if (!navigator.geolocation) {
-          showError("Trình duyệt không hỗ trợ định vị.");
+          showError("ບຣາວເຊີບໍ່ສະໜັບສະໜູນການກໍານົດສະຖານທີ່.");
           return;
         }
 
@@ -770,19 +814,19 @@
           },
           (error) => {
             hideLoading();
-            let message = "Không thể lấy vị trí của bạn. ";
+            let message = "ບໍ່ສາມາດຮັບສະຖານທີ່ຂອງທ່ານໄດ້. ";
             switch (error.code) {
               case error.PERMISSION_DENIED:
-                message += "Quyền truy cập vị trí bị từ chối.";
+                message += "ການເຂົ້າເຖິງສະຖານທີ່ຖືກປະຕິເສດ.";
                 break;
               case error.POSITION_UNAVAILABLE:
-                message += "Thông tin vị trí không khả dụng.";
+                message += "ຂໍ້ມູນສະຖານທີ່ບໍ່ມີ.";
                 break;
               case error.TIMEOUT:
-                message += "Yêu cầu vị trí hết thời gian.";
+                message += "ການຮ້ອງຂໍສະຖານທີ່ໝົດເວລາ.";
                 break;
               default:
-                message += "Đã xảy ra lỗi không xác định.";
+                message += "ເກີດຂໍ້ຜິດພາດທີ່ບໍ່ຮູ້ຈັກ.";
                 break;
             }
             showError(message);
@@ -803,9 +847,7 @@
           );
 
           if (!currentResponse.ok) {
-            throw new Error(
-              "Không tìm thấy thành phố. Vui lòng kiểm tra chính tả và thử lại."
-            );
+            throw new Error("ບໍ່ພົບເມືອງ. ກະລຸນາກວດສອບການສະກົດແລະລອງໃໝ່.");
           }
 
           const currentData = await currentResponse.json();
@@ -830,9 +872,7 @@
           );
 
           if (!currentResponse.ok) {
-            throw new Error(
-              "Không thể lấy dữ liệu thời tiết cho vị trí của bạn."
-            );
+            throw new Error("ບໍ່ສາມາດຮັບຂໍ້ມູນອາກາດສໍາລັບສະຖານທີ່ຂອງທ່ານໄດ້.");
           }
 
           const currentData = await currentResponse.json();
@@ -852,7 +892,7 @@
           );
 
           if (!forecastResponse.ok) {
-            throw new Error("Không thể lấy dữ liệu dự báo.");
+            throw new Error("ບໍ່ສາມາດຮັບຂໍ້ມູນພະຍາກອນໄດ້.");
           }
 
           const forecastData = await forecastResponse.json();
@@ -927,19 +967,19 @@
                     }</div>
                     <div class="forecast-details">
                         <div class="forecast-detail">
-                            <span class="forecast-detail-label">Độ Ẩm</span>
+                            <span class="forecast-detail-label">ຄວາມຊຸ່ມ</span>
                             <span class="forecast-detail-value">${
                               item.main.humidity
                             }%</span>
                         </div>
                         <div class="forecast-detail">
-                            <span class="forecast-detail-label">Gió</span>
+                            <span class="forecast-detail-label">ລົມ</span>
                             <span class="forecast-detail-value">${
                               item.wind.speed
                             } m/s</span>
                         </div>
                         <div class="forecast-detail">
-                            <span class="forecast-detail-label">Mây</span>
+                            <span class="forecast-detail-label">ເມກ</span>
                             <span class="forecast-detail-value">${
                               item.clouds.all
                             }%</span>
